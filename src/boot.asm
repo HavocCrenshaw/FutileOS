@@ -1,54 +1,23 @@
-org 0x7C00
-bits 16
+ORG 0x7C00
+BITS 16
 
 main:
-    ; Brute forcing Hello World because I can't do assembly, lol
-    mov ah, 0x0A ; Write character
-    mov al, 0x48 ; Letter 'H'
-    mov bh, 0x0 ; Page zero
-    mov cx, 0x1 ; Print once
+    MOV SI, hello
+    MOV AH, 0x0E ; Teletype output, moving the cursor one to the right after printing a character.
+    MOV BH, 0x0 ; Page 0
 
-    int 0x10 ; Video interrupt
+print:
+    LODSB
+    CMP AL, 0 ; Make sure we're done
+    JZ halt ; If zero, go and halt
+    INT 0x10 ; Video interrupt
+    JMP print
 
-    mov ah, 0x03 ; Get cursor position
-    int 0x10
-    inc dl ; Move the cursor over one
-    mov ah, 0x02 ; Set cursor position
-    int 0x10
+halt:
+    HLT;
+    JMP halt ; Catch the processor if it tries to run away
 
-    mov ah, 0x0A
-    mov al, 0x65 ; Letter 'e'
-    mov cx, 0x1
-    int 0x10
+hello: DB "Hello, World!", 0x0A, 0x0D, 0
 
-    mov ah, 0x02
-    inc dl
-    int 0x10
-
-    mov ah, 0x0A
-    mov al, 0x6C ; Letter `l`
-    int 0x10
-
-    mov ah, 0x02
-    inc dl
-    int 0x10
-
-    mov ah, 0x0A
-    mov al, 0x6C ; Letter `l`
-    int 0x10
-
-    mov ah, 0x02
-    inc dl
-    int 0x10
-
-    mov ah, 0x0A
-    mov al, 0x6F ; Letter `o`
-    int 0x10
-
-    hlt ; Nothing left to be done
-
-.halt:
-    jmp .halt ; Catch the processor if it tries to run away
-
-times 510 - ($ - $$) db 0
-dw 0xAA55
+TIMES 510 - ($ - $$) DB 0
+DW 0xAA55
