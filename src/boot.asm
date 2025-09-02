@@ -11,13 +11,13 @@ clear:
     ; Set video mode to guarantee behavior
     MOV AH, 00h              ; Set video mode
     MOV AL, 02h              ; 80x25 text resolution, 16 colors
-    INT 0x10                 ; Video interrupt
+    INT 10h                  ; Video interrupt
     
     ; Reset our cursor position
     MOV AH, 02h              ; Set cursor position
-    MOV DH, 0x0              ; Row 0
-    MOV DL, 0x0              ; Column 0
-    INT 0x10                 ; Video interrupt
+    MOV DH, 0                ; Row 0
+    MOV DL, 0                ; Column 0
+    INT 10h                  ; Video interrupt
 
     RET
 
@@ -26,7 +26,7 @@ print:
     LODSB                    ; Load character from SI into AL and increment
     TEST AL, AL              ; Check if character is null
     JZ print_return
-    INT 0x10                 ; Video interrupt
+    INT 10h                  ; Video interrupt
     JMP print                ; Loop
 
 print_return:
@@ -42,11 +42,11 @@ loadsectors:
     MOV CH, 0                ; Cylinder 0
     MOV CL, 2                ; Sector 2
     MOV DH, 0                ; Head 0
-
-    XOR BX, BX               ; Clear ES
-    MOV ES, BX
+    MOV DL, 0
+    MOV ES, AX               ; Clear ES
+    MOV BX, 0x7E00           ; Set data at next sector
     INT 13h                  ; Read/write drive interrupt
-    JMP 0x7E00               ; Jump to the next sector, we're done.
+    JMP 0x0000:0x7E00        ; Jump to the next sector, we're done.
 
 _hello: DB "Loading FutileOS...", 0
 
