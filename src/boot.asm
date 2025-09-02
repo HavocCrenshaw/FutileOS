@@ -21,17 +21,23 @@ print:
 input:
     MOV AH, 0x0 ; Read key press
     INT 0x16 ; Keyboard interrupt
-    CMP AL, 0x0D ; Check if it's a carriage return
-    JE newline
     MOV AH, 0x0E
     INT 0x10
+    CMP AL, 0x0D ; Check if it's a carriage return
+    JE newline
+    CMP AL, 0x08 ; Check if it's a backspace
+    JE backspace
     JMP input ; Keep it looping
 
 newline:
-    MOV AH, 0x0E
-    MOV AL, 0x0D ; Return
-    INT 0x10
     MOV AL, 0x0A ; Newline
+    INT 0x10
+    JMP input ; Keep it loopin
+
+backspace:
+    MOV AH, 0x0A ; Write at cursor
+    MOV CX, 0x1 ; Write once
+    MOV AL, 0x0 ; Null
     INT 0x10
     JMP input ; Keep it loopin
 
