@@ -1,52 +1,54 @@
 ORG 0x7C00
 BITS 16
 
-clear:
-    MOV AH, 0x05 ; Select page
-    MOV AL, 0x1 ; Page 1
-    INT 0x10
-
 main:
-    MOV SI, command
-    MOV AH, 0x0E ; Teletype output, moving the cursor one to the right after printing a character.
-    MOV BH, 0x1 ; Page 0
+    CALL clear
+    MOV SI, _hello
+    CALL print
+    CALL loadsectors
+
+clear:
+    ; Set video mode to guarantee behavior
+    MOV AH, 00h              ; Set video mode
+    MOV AL, 02h              ; 80x25 text resolution, 16 colors
+    INT 0x10                 ; Video interrupt
+    
+    ; Reset our cursor position
+    MOV AH, 02h              ; Set cursor position
+    MOV DH, 0x0              ; Row 0
+    MOV DL, 0x0              ; Column 0
+    INT 0x10                 ; Video interrupt
+
+    RET
 
 print:
-    LODSB
-    TEST AL, AL ; Make sure we're done
-    JZ input ; If zero, go and halt
-    INT 0x10 ; Video interrupt
-    JMP print
+    MOV AH, 0x0E             ; Teletype output
+    LODSB                    ; Load character from SI into AL and increment
+    TEST AL, AL              ; Check if character is null
+    JZ print_return
+    INT 0x10                 ; Video interrupt
+    JMP print                ; Loop
 
-input:
-    MOV AH, 0x0 ; Read key press
-    INT 0x16 ; Keyboard interrupt
-    MOV AH, 0x0E
-    INT 0x10
-    CMP AL, 0x0D ; Check if it's a carriage return
-    JE newline
-    CMP AL, 0x08 ; Check if it's a backspace
-    JE backspace
-    JMP input ; Keep it looping
+print_return:
+    RET
 
-newline:
-    MOV AL, 0x0A ; Newline
-    INT 0x10
-    JMP input ; Keep it loopin
+loadsectors:
+    XOR AX, AX               ; Clear DS
+    MOV DS, AX
+    CLD
 
-backspace:
-    MOV AH, 0x0A ; Write at cursor
-    MOV CX, 0x1 ; Write once
-    MOV AL, 0x0 ; Null
-    INT 0x10
-    JMP input ; Keep it loopin
+    MOV AH, 02h              ; Read sectors from drive
+    MOV AL, 1                ; We want to read this many sectors
+    MOV CH, 0                ; Cylinder 0
+    MOV CL, 2                ; Sector 2
+    MOV DH, 0                ; Head 0
 
-halt:
-    CLI ; Disable hardware interrupts
-    HLT
-    JMP halt ; Catch the processor if it tries to run away
+    XOR BX, BX               ; Clear ES
+    MOV ES, BX
+    INT 13h                  ; Read/write drive interrupt
+    JMP 0x7E00               ; Jump to the next sector, we're done.
 
-command: DB "(> ", 0
+_hello: DB "Loading FutileOS...", 0
 
 TIMES 510 - ($ - $$) DB 0
 DW 0xAA55
